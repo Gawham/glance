@@ -1,9 +1,9 @@
 "use client";
 
+import React, { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { trpc } from '../_trpc/client';
 import { Loader2 } from 'lucide-react';
-import { useEffect } from 'react';
 
 const Page = () => {
   const router = useRouter();
@@ -44,4 +44,10 @@ const Page = () => {
   );
 };
 
-export default Page;
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <Page />
+    </Suspense>
+  );
+}
