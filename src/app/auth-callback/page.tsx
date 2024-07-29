@@ -8,7 +8,7 @@ import { useEffect } from 'react';
 const Page = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const origin = searchParams.get('origin');
+  const origin = searchParams ? searchParams.get('origin') : null;
 
   const { data, isLoading, error } = trpc.authCallback.useQuery(undefined, {
     retry: true,
