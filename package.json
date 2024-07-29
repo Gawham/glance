@@ -50,7 +50,7 @@
     "fs": "^0.0.1-security",
     "google-auth-library": "^9.11.0",
     "google-search-results-nodejs": "^2.1.0",
-    "googleapis": "^140.0.1",
+    "googleapis": "^126.0.1",
     "i": "^0.3.7",
     "jsdom": "^24.1.1",
     "langchain": "^0.2.10",
