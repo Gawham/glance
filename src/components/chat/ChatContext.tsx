@@ -1,8 +1,11 @@
-import { createContext, useState, ReactNode, useRef } from 'react';
+"use client"
+
+import { createContext, useState, ReactNode, useRef, useContext } from 'react';
 import { useToast } from '../ui/use-toast';
 import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/app/_trpc/client';
 import { INFINITE_QUERY_LIMIT } from '@/config/infinite-query';
+import { useLoading } from '@/context/LoadingContext';
 
 type StreamResponse = {
   addMessage: () => void;
@@ -25,7 +28,7 @@ interface Props {
 
 export const ChatContextProvider = ({ fileId, children }: Props) => {
   const [message, setMessage] = useState<string>('');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const { loading, setLoading, disableAfterLoading } = useLoading();
 
   const utils = trpc.useContext();
   const { toast } = useToast();
@@ -90,14 +93,14 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
         }
       );
 
-      setIsLoading(true);
+      setLoading(true);
 
       return {
         previousMessages: previousMessages?.pages.flatMap((page) => page.messages) ?? [],
       };
     },
     onSuccess: async (stream) => {
-      setIsLoading(false);
+      setLoading(false);
 
       if (!stream) {
         return toast({
@@ -186,8 +189,7 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
       );
     },
     onSettled: async () => {
-      setIsLoading(false);
-
+      setLoading(false);
       await utils.getFileMessages.invalidate({ fileId });
     },
   });
@@ -204,7 +206,7 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
         addMessage,
         message,
         handleInputChange,
-        isLoading,
+        isLoading: loading,
       }}
     >
       {children}

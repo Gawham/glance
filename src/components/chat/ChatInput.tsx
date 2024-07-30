@@ -1,8 +1,10 @@
+// /components/chat/ChatInput.tsx
 import { Textarea } from '../ui/textarea';
 import { Button } from '../ui/button';
 import { Send } from 'lucide-react';
 import { useContext, useRef } from 'react';
 import { ChatContext } from './ChatContext';
+import { useLoading } from '@/context/LoadingContext';
 
 interface ChatInputProps {
   isDisabled?: boolean;
@@ -15,6 +17,7 @@ const ChatInput = ({ isDisabled }: ChatInputProps) => {
     isLoading,
     message,
   } = useContext(ChatContext);
+  const { disableAfterLoading } = useLoading();
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -39,9 +42,10 @@ const ChatInput = ({ isDisabled }: ChatInputProps) => {
                 }}
                 placeholder="Enter your question..."
                 className="resize-none pr-12 text-base py-3 scrollbar-thumb-blue scrollbar-thumb-rounded scrollbar-track-blue-lighter scrollbar-w-2 scrolling-touch"
+                disabled={isLoading || disableAfterLoading || isDisabled}
               />
               <Button
-                disabled={isLoading || isDisabled}
+                disabled={isLoading || disableAfterLoading || isDisabled}
                 className="absolute bottom-1.5 right-[8px]"
                 aria-label="send message"
                 onClick={() => {

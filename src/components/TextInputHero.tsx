@@ -1,16 +1,17 @@
+// /components/TextInputHero.tsx
 import React, { useState, ChangeEvent, KeyboardEvent } from 'react';
-import { RiRefreshLine } from '@remixicon/react';
 import { Button } from '@tremor/react';
+import { useLoading } from '@/context/LoadingContext';
 
 interface TextInputHeroProps {
   onSubmit: (firmName: string) => void;
-  width?: string;  // Add width as an optional prop
-  height?: string; // Add height as an optional prop
+  width?: string;
+  height?: string;
 }
 
 export function TextInputHero({ onSubmit, width = '100%', height = 'auto' }: TextInputHeroProps) {
   const [inputValue, setInputValue] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(false);
+  const { loading, setLoading, disableAfterLoading } = useLoading();
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setInputValue(e.target.value);
@@ -40,12 +41,14 @@ export function TextInputHero({ onSubmit, width = '100%', height = 'auto' }: Tex
           value={inputValue}
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}
-          style={{ height: '100%' }}  // Adjust the input height to fill the container
+          style={{ height: '100%' }}
+          disabled={loading || disableAfterLoading}
         />
         <Button
           className="absolute right-0 top-0 h-full bg-black text-white hover:bg-gray-800 border border-black rounded-none"
           style={{ borderColor: 'black', height: '100%' }}
           onClick={handleEnterClick}
+          disabled={loading || disableAfterLoading}
         >
           Enter
         </Button>

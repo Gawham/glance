@@ -14,7 +14,7 @@ const Providers = ({ children }: PropsWithChildren) => {
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: 'http://glanceai.in/api/trpc',
+          url: 'https://glanceai.in/api/trpc',
         }),
       ],
     })

@@ -1,4 +1,5 @@
-"use client"
+// /components/PdfRenderer.tsx
+"use client";
 
 import React, { useState } from 'react';
 import { AreaChartUsageExample } from './display/chart';
@@ -7,6 +8,8 @@ import { ListUsageExample } from './display/ListUsageExample';
 import { List2 } from './display/List2';
 import { CalloutUsageExample } from './display/CalloutUsageExample';
 import { Headings } from './display/headings';
+import { Loader2 } from 'lucide-react';
+import { useLoading } from '@/context/LoadingContext';
 
 interface YearlySalesData {
   date: string;
@@ -65,8 +68,10 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
   const [companyName, setCompanyName] = useState<string>(defaultData.companyName);
   const [competitorName, setCompetitorName] = useState<string>(defaultData.competitorName);
   const [companyQuery, setCompanyQuery] = useState<string | null>(defaultData.companyQuery);
+  const { loading, setLoading } = useLoading();
 
   const handleFirmSubmit = async (firmName: string) => {
+    setLoading(true);
     try {
       const response = await fetch('/api/ticker', {
         method: 'POST',
@@ -97,6 +102,8 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
       setCompanyQuery(data.companyQuery);
     } catch (error) {
       console.error(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -118,7 +125,7 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
               />
             </div>
             <div className="flex items-center justify-center" style={{ transform: 'scale(0.95)', transformOrigin: 'center' }}>
-              <CalloutUsageExample 
+              <CalloutUsageExample
                 firmName={ticker ?? 'Unknown'}
                 companyQuery={companyQuery ?? 'Loading...'}
               />
@@ -134,15 +141,20 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
           </div>
           <div className="w-full flex items-center justify-center" style={{ height: '200px', marginTop: '0px' }}>
             <div style={{ height: '100%', width: '100%', backgroundColor: '#fff', zIndex: 2 }}>
-              <AreaChartUsageExample 
-                companyName={companyName} 
+              <AreaChartUsageExample
+                companyName={companyName}
                 competitorName={competitorName}
-                companyYearlySales={companyYearlySales} 
-                competitorYearlySales={competitorYearlySales} 
+                companyYearlySales={companyYearlySales}
+                competitorYearlySales={competitorYearlySales}
               />
             </div>
           </div>
         </div>
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50">
+            <Loader2 className="animate-spin" size={48} />
+          </div>
+        )}
       </div>
     </div>
   );
