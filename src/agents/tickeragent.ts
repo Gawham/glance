@@ -46,6 +46,7 @@ const InitializationInputSchema = z.object({
 
 const tickersList = `
 Ticker - Firm Name
+OFSS.NS - Oracle Financial Services Software
 RELIANCE.NS - Reliance Industries Limited
 COALINDIA.NS - Coal India Limited
 HDFCBANK.NS - HDFC Bank Limited
