@@ -22,7 +22,7 @@ const InitializationInputSchema = z.object({
 
 const project = process.env.GOOGLE_PROJECT;
 const location = 'asia-south1';
-const textModel = 'gemini-1.0-pro';
+const textModel = 'gemini-1.5-pro';
 
 const authOptions = {
   credentials: {
