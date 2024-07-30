@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Dialog, DialogTrigger, DialogContent } from './ui/dialog';
 import { Button } from './ui/button';
 import Dropzone from 'react-dropzone';
-import { Cloud, File } from 'react-feather';
+import { Cloud, File as FileIcon } from 'react-feather';
 import { Progress } from './ui/progress';
 import { useUploadThing } from '@/lib/uploadthing';
 import { useToast } from './ui/use-toast';
@@ -19,12 +19,22 @@ const UploadDropzone = () => {
   const [acceptedFiles, setAcceptedFiles] = useState<File[]>([]);
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadCompleted, setUploadCompleted] = useState<boolean>(false);
   const { toast } = useToast();
   const { startUpload } = useUploadThing('pdfUploader');
 
   const { mutate: startPolling } = trpc.startPolling.useMutation({
     onSuccess: (file) => {
+      console.log('Polling success:', file);
       router.push(`/dashboard/${file.id}`);
+    },
+    onError: (error) => {
+      console.error('Polling error:', error);
+      toast({
+        title: 'Polling failed',
+        description: 'Could not retrieve file status.',
+        variant: 'destructive',
+      });
     },
     retry: true,
     retryDelay: 500,
@@ -32,7 +42,7 @@ const UploadDropzone = () => {
 
   const startSimulatedProgress = () => {
     setUploadProgress(0);
-
+    setUploadCompleted(false);
     const interval = setInterval(() => {
       setUploadProgress((prevProgress) => {
         if (prevProgress >= 95) {
@@ -42,24 +52,22 @@ const UploadDropzone = () => {
         return prevProgress + 5;
       });
     }, 500);
-
     return interval;
   };
 
   const handleDrop = async (acceptedFiles: File[]) => {
     setAcceptedFiles(acceptedFiles);
     setIsUploading(true);
-
     const progressInterval = startSimulatedProgress();
 
     try {
       const res = await startUpload(acceptedFiles);
 
-      if (!res) {
+      if (!res || res.length === 0) {
         throw new Error('Upload failed');
       }
 
-      const [fileResponse] = res;
+      const fileResponse = res[0];
       const key = fileResponse?.key;
 
       if (!key) {
@@ -68,10 +76,11 @@ const UploadDropzone = () => {
 
       clearInterval(progressInterval);
       setUploadProgress(100);
-
+      setUploadCompleted(true);
       startPolling({ key });
     } catch (error) {
       clearInterval(progressInterval);
+      console.error('Upload error:', error);
       toast({
         title: 'Something went wrong',
         description: 'Please try again later',
@@ -97,21 +106,25 @@ const UploadDropzone = () => {
               <p className="mb-2 text-sm text-zinc-700">
                 Drag & drop your file here, or click to select file
               </p>
-              <p className="text-xs text-zinc-500">PDF (Upto 4MB)</p>
+              <p className="text-xs text-zinc-500">PDF (Up to 4MB)</p>
             </div>
             {acceptedFiles && acceptedFiles[0] ? (
               <div className="max-w-xs bg-white flex items-center rounded-md overflow-hidden outline outline-[1px] outline-zinc-200 divide-x divide-zinc-200">
                 <div className="px-3 py-2 h-full grid place-items-center">
-                  <File className="h-4 w-4 text-blue-500" />
+                  <FileIcon className="h-4 w-4 text-blue-500" />
                 </div>
                 <div className="px-3 py-2 h-full text-sm truncate">
                   {acceptedFiles[0].name}
                 </div>
               </div>
             ) : null}
-            {isUploading ? (
+            {isUploading || uploadCompleted ? (
               <div className="w-full mt-4 max-w-xs mx-auto">
-                <Progress value={uploadProgress} className="h-1 w-full bg-zinc-200" />
+                <Progress
+                  value={uploadProgress}
+                  className="h-1 w-full bg-zinc-200"
+                  indicatorColor={uploadProgress === 100 ? 'bg-green-500' : ''}
+                />
                 {uploadProgress === 100 && (
                   <div className="flex gap-1 items-center justify-center text-sm text-zinc-700 text-center pt-2">
                     <Loader2 className="h-3 w-3 animate-spin" />

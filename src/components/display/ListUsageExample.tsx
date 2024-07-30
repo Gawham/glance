@@ -28,7 +28,7 @@ export function ListUsageExample({ peRatio, quickRatio, currentRatio, debtToEqui
   ];
 
   return (
-    <Card className="mx-auto max-w-md text-center">
+    <Card className="mx-auto max-w-lg text-center h-full flex flex-col justify-center">
       <h3 className="text-tremor-content-strong dark:text-dark-tremor-content-strong font-medium">Financial Ratios</h3>
       <List className="mt-2">
         {ratios.map((item) => (
@@ -41,4 +41,3 @@ export function ListUsageExample({ peRatio, quickRatio, currentRatio, debtToEqui
     </Card>
   );
 }
-

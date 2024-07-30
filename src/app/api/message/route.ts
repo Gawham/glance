@@ -5,6 +5,8 @@ import { SendMessageValidator } from '@/lib/validators/SendMessageValidator';
 import { initializationTool } from '@/agents/initializationAgent';
 import { generateContext } from '@/agents/pdfagent';
 
+export const maxDuration = 300;
+
 export const POST = async (req: NextRequest) => {
   const body = await req.json();
 
