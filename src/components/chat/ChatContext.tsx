@@ -100,9 +100,8 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
       };
     },
     onSuccess: async (stream) => {
-      setLoading(false);
-
       if (!stream) {
+        setLoading(false);
         return toast({
           title: 'There was a problem sending this message',
           description: 'Please refresh this page and try again',
@@ -179,6 +178,8 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
           }
         );
       }
+
+      setLoading(false);
     },
 
     onError: (_, __, context) => {
@@ -187,9 +188,9 @@ export const ChatContextProvider = ({ fileId, children }: Props) => {
         { fileId },
         { messages: context?.previousMessages ?? [], nextCursor: null }
       );
+      setLoading(false);
     },
     onSettled: async () => {
-      setLoading(false);
       await utils.getFileMessages.invalidate({ fileId });
     },
   });

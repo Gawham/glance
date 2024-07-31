@@ -35,6 +35,7 @@ const vertexAI = new VertexAI({
   googleAuthOptions: authOptions,
 });
 
+
 const generativeModel = vertexAI.getGenerativeModel({
   model: textModel,
   safetySettings: [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }],
