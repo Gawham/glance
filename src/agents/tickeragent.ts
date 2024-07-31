@@ -19,7 +19,7 @@ interface YearlySalesData {
 
 const project = process.env.GOOGLE_PROJECT;
 const location = 'asia-south1';
-const textModel = 'gemini-1.5-flash';
+const textModel = 'gemini-1.5-pro';
 
 const authOptions = {
   credentials: {
