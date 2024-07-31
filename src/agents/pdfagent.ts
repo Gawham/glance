@@ -21,19 +21,9 @@ interface InitializationOutputs {
 
 const project = process.env.GOOGLE_PROJECT;
 const location = 'asia-south1';
-const textModel = 'gemini-1.0-pro';
+const textModel = 'gemini-1.5-pro';
 
-const authOptions = {
-  credentials: {
-    client_email: process.env.GCP_SERVICE_ACCOUNT_EMAIL,
-    private_key: process.env.GCP_PRIVATE_KEY,
-  }
-}
-const vertexAI = new VertexAI({
-  project: project,
-  location: location,
-  googleAuthOptions: authOptions,
-});
+const vertexAI = new VertexAI({ project, location });
 
 const generativeModel = vertexAI.getGenerativeModel({
   model: textModel,
