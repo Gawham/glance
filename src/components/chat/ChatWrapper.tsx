@@ -44,7 +44,7 @@ const ChatWrapper = ({ fileId }: ChatWrapperProps) => {
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
             <h3 className="font-semibold text-xl">Loading...</h3>
-            <p className="text-zinc-500 text-sm">We're preparing your PDF.</p>
+            <p className="text-zinc-500 text-sm">We&apos;re preparing your PDF.</p>
           </div>
         </div>
         <ChatInput isDisabled />
@@ -58,7 +58,7 @@ const ChatWrapper = ({ fileId }: ChatWrapperProps) => {
           <div className="flex flex-col items-center gap-2">
             <Loader2 className="h-8 w-8 text-blue-500 animate-spin" />
             <h3 className="font-semibold text-xl">Processing PDF...</h3>
-            <p className="text-zinc-500 text-sm">This won't take long.</p>
+            <p className="text-zinc-500 text-sm">This won&apos;t take long.</p>
           </div>
         </div>
         <ChatInput isDisabled />
