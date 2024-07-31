@@ -1,4 +1,3 @@
-// /components/PdfRenderer.tsx
 "use client";
 
 import React, { useState } from 'react';
@@ -10,6 +9,7 @@ import { CalloutUsageExample } from './display/CalloutUsageExample';
 import { Headings } from './display/headings';
 import { Loader2 } from 'lucide-react';
 import { useLoading } from '@/context/LoadingContext';
+import { useMediaQuery } from 'react-responsive';
 
 interface YearlySalesData {
   date: string;
@@ -69,6 +69,8 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
   const [competitorName, setCompetitorName] = useState<string>(defaultData.competitorName);
   const [companyQuery, setCompanyQuery] = useState<string | null>(defaultData.companyQuery);
   const { loading, setLoading } = useLoading();
+  const isMobile = useMediaQuery({ query: '(max-width: 768px)' });
+  const [showPdf, setShowPdf] = useState(false);
 
   const handleFirmSubmit = async (firmName: string) => {
     setLoading(true);
@@ -108,54 +110,64 @@ const PdfRenderer = ({ fileId }: PdfRendererProps) => {
   };
 
   return (
-    <div className="w-full bg-white rounded-md shadow flex flex-col items-center p-0" style={{ position: 'relative', zIndex: 1 }}>
-      <div className="w-full border-b border-zinc-50 flex flex-col items-center justify-between" style={{ height: '43rem', backgroundColor: '#fff' }}>
-        <div className="flex-1 flex flex-col items-center space-y-4 w-full" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
-          <div className="w-full flex items-center justify-between" style={{ marginTop: '10px' }}>
-            <Headings firmName={companyName} currentPrice={currentPrice ?? 0} />
-            <TextInputHero onSubmit={handleFirmSubmit} width="80%" height="70px" />
+    <div className="w-full bg-white rounded-md shadow flex flex-col items-center p-0" style={{ position: 'relative', zIndex: 1,  }}>
+      {isMobile && (
+        <button
+          onClick={() => setShowPdf(!showPdf)}
+          className="fixed top-4 right-4 z-20 p-2 bg-blue-500 text-bl rounded" style={{ marginTop: '100px' , height: '10rem', backgroundColor: '#000000' }}
+        >
+          {showPdf ? '' : '📄'}
+        </button>
+      )}
+      {(showPdf || !isMobile) && (
+        <div className="w-full border-b border-zinc-50 flex flex-col items-center justify-between" style={{ height: '43rem', backgroundColor: '#fff' }}>
+          <div className="flex-1 flex flex-col items-center space-y-4 w-full" style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+            <div className="w-full flex items-center justify-between" style={{ marginTop: '10px' }}>
+              <Headings firmName={companyName} currentPrice={currentPrice ?? 0} />
+              <TextInputHero onSubmit={handleFirmSubmit} width="80%" height="70px" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full px-4" style={{ marginTop: '5px' }}>
+              <div className="flex justify-center" style={{ transform: 'scale(0.95)', transformOrigin: 'center' }}>
+                <ListUsageExample
+                  peRatio={peRatio ?? 0}
+                  quickRatio={quickRatio ?? 0}
+                  currentRatio={currentRatio ?? 0}
+                  debtToEquity={debtToEquity ?? 0}
+                />
+              </div>
+              <div className="flex items-center justify-center" style={{ transform: 'scale(0.95)', transformOrigin: 'center' }}>
+                <CalloutUsageExample
+                  firmName={ticker ?? 'Unknown'}
+                  companyQuery={companyQuery ?? 'Loading...'}
+                />
+              </div>
+              <div className="flex justify-center" style={{ transform: 'scale(0.95)', transformOrigin: 'center' }}>
+                <List2
+                  currentPrice={currentPrice ?? 0}
+                  roe={roe ?? 0}
+                  threeYearCAGR={threeYearCAGR ?? 0}
+                  earningsGrowth={earningsGrowth ?? 0}
+                />
+              </div>
+            </div>
+            <div className="w-full flex items-center justify-center" style={{ height: '200px', marginTop: '0px' }}>
+              <div style={{ height: '100%', width: '100%', backgroundColor: '#fff', zIndex: 2 }}>
+                <AreaChartUsageExample
+                  companyName={companyName}
+                  competitorName={competitorName}
+                  companyYearlySales={companyYearlySales}
+                  competitorYearlySales={competitorYearlySales}
+                />
+              </div>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-4 w-full px-4" style={{ marginTop: '5px' }}>
-            <div className="flex justify-center" style={{ transform: 'scale(0.95)', transformOrigin: 'center' }}>
-              <ListUsageExample
-                peRatio={peRatio ?? 0}
-                quickRatio={quickRatio ?? 0}
-                currentRatio={currentRatio ?? 0}
-                debtToEquity={debtToEquity ?? 0}
-              />
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50">
+              <Loader2 className="animate-spin" size={48} />
             </div>
-            <div className="flex items-center justify-center" style={{ transform: 'scale(0.95)', transformOrigin: 'center' }}>
-              <CalloutUsageExample
-                firmName={ticker ?? 'Unknown'}
-                companyQuery={companyQuery ?? 'Loading...'}
-              />
-            </div>
-            <div className="flex justify-center" style={{ transform: 'scale(0.95)', transformOrigin: 'center' }}>
-              <List2
-                currentPrice={currentPrice ?? 0}
-                roe={roe ?? 0}
-                threeYearCAGR={threeYearCAGR ?? 0}
-                earningsGrowth={earningsGrowth ?? 0}
-              />
-            </div>
-          </div>
-          <div className="w-full flex items-center justify-center" style={{ height: '200px', marginTop: '0px' }}>
-            <div style={{ height: '100%', width: '100%', backgroundColor: '#fff', zIndex: 2 }}>
-              <AreaChartUsageExample
-                companyName={companyName}
-                competitorName={competitorName}
-                companyYearlySales={companyYearlySales}
-                competitorYearlySales={competitorYearlySales}
-              />
-            </div>
-          </div>
+          )}
         </div>
-        {loading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-50">
-            <Loader2 className="animate-spin" size={48} />
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };
