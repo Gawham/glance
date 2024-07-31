@@ -1,16 +1,18 @@
-import Link from 'next/link'
-import MaxWidthWrapper from './MaxWidthWrapper'
-import { buttonVariants } from './ui/button'
+import Link from 'next/link';
+import MaxWidthWrapper from './MaxWidthWrapper';
+import { buttonVariants } from './ui/button';
 import {
   LoginLink,
   RegisterLink,
   getKindeServerSession,
-} from '@kinde-oss/kinde-auth-nextjs/server'
-import { ArrowRight } from 'lucide-react'
+} from '@kinde-oss/kinde-auth-nextjs/server';
+import { ArrowRight } from 'lucide-react';
+import UserAccountNav from './UserAccountNav';
+import MobileNav from './MobileNav';
 
-const Navbar = () => {
-  const { getUser } = getKindeServerSession()
-  const user = getUser()
+const Navbar = async () => {
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
 
   return (
     <nav className='sticky h-14 inset-x-0 top-0 z-30 w-full border-b border-gray-200 bg-white/75 backdrop-blur-lg transition-all'>
@@ -23,6 +25,16 @@ const Navbar = () => {
           </Link>
 
           <div className='hidden items-center space-x-4 sm:flex'>
+            {user ? (
+              <div className='flex items-center'>
+                <span></span>
+                <UserAccountNav
+                  name="Your Account"
+                  email=""
+                  imageUrl=""
+                />
+              </div>
+            ) : (
               <>
                 <LoginLink
                   className={buttonVariants({
@@ -35,15 +47,19 @@ const Navbar = () => {
                   className={buttonVariants({
                     size: 'sm',
                   })}>
-                  Get started{' '}
+                  Sign Up{' '}
                   <ArrowRight className='ml-1.5 h-5 w-5' />
                 </RegisterLink>
               </>
+            )}
           </div>
+
+          <MobileNav isAuth={!!user} />
         </div>
       </MaxWidthWrapper>
     </nav>
-  )
-}
+  );
+};
 
-export default Navbar
+export default Navbar;
+

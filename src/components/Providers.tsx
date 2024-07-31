@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-query'
 import { httpBatchLink } from '@trpc/client'
 import { PropsWithChildren, useState } from 'react'
+import { absoluteUrl } from '@/lib/utils'
 
 const Providers = ({ children }: PropsWithChildren) => {
   const [queryClient] = useState(() => new QueryClient())
@@ -14,7 +15,7 @@ const Providers = ({ children }: PropsWithChildren) => {
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: 'https://glanceai.in/api/trpc',
+          url: absoluteUrl("/api/trpc"),
         }),
       ],
     })

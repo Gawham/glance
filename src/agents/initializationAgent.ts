@@ -24,7 +24,17 @@ const project = process.env.GOOGLE_PROJECT;
 const location = 'asia-south1';
 const textModel = 'gemini-1.5-pro';
 
-const vertexAI = new VertexAI({ project, location });
+const authOptions = {
+  credentials: {
+    client_email: process.env.GCP_SERVICE_ACCOUNT_EMAIL,
+    private_key: process.env.GCP_PRIVATE_KEY,
+  }
+}
+const vertexAI = new VertexAI({
+  project: project,
+  location: location,
+  googleAuthOptions: authOptions,
+});
 
 const generativeModel = vertexAI.getGenerativeModel({
   model: textModel,
@@ -34,6 +44,7 @@ const generativeModel = vertexAI.getGenerativeModel({
 
 const tickersList = `
 Ticker - Firm Name
+OFSS.NS - Oracle Financial Services Software
 RELIANCE.NS - Reliance Industries Limited
 COALINDIA.NS - Coal India Limited
 HDFCBANK.NS - HDFC Bank Limited
