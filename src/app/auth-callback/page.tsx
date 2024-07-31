@@ -1,11 +1,14 @@
+// /app/auth-callback/page.js
+
 "use client";
 
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { trpc } from '../_trpc/client';
 import { Loader2 } from 'lucide-react';
 import { useEffect } from 'react';
 
-const Page = () => {
+const PageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const origin = searchParams ? searchParams.get('origin') : null;
@@ -41,6 +44,23 @@ const Page = () => {
         )}
       </div>
     </div>
+  );
+};
+
+const Page = () => {
+  return (
+    <Suspense fallback={
+      <div className='w-full mt-24 flex justify-center'>
+        <div className='flex flex-col items-center gap-2'>
+          <Loader2 className='h-8 w-8 animate-spin text-zinc-800' />
+          <h3 className='font-semibold text-xl'>
+            Loading...
+          </h3>
+        </div>
+      </div>
+    }>
+      <PageContent />
+    </Suspense>
   );
 };
 
