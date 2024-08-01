@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { initializeQueries } from '@/agents/tickeragent';
 
+export const maxDuration = 300;
+
 export async function POST(req: NextRequest) {
   try {
     const { firmName } = await req.json();
