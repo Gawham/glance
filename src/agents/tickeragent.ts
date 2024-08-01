@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { HarmBlockThreshold, HarmCategory, VertexAI, GenerateContentRequest, GenerateContentResult } from '@google-cloud/vertexai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import yahooFinance from 'yahoo-finance2';
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { googleSearchTool } from '../tools/googleSearchTool';
@@ -17,29 +17,12 @@ interface YearlySalesData {
   sales: number;
 }
 
-const project = process.env.GOOGLE_PROJECT;
-const location = 'asia-south1';
-const textModel = 'gemini-1.5-pro';
-
-const authOptions = {
-  credentials: {
-    client_email: process.env.GCP_SERVICE_ACCOUNT_EMAIL,
-    private_key: process.env.GCP_PRIVATE_KEY,
-  }
+const apiKey = process.env.API_KEY;
+if (!apiKey) {
+  throw new Error("API_KEY environment variable is not defined");
 }
-const vertexAI = new VertexAI({
-  project: project,
-  location: location,
-  googleAuthOptions: authOptions,
-});
 
-
-
-const generativeModel = vertexAI.getGenerativeModel({
-  model: textModel,
-  safetySettings: [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }],
-  generationConfig: { maxOutputTokens: 1024, temperature: 0 },
-});
+const genAI = new GoogleGenerativeAI(apiKey);
 
 const InitializationInputSchema = z.object({
   message: z.string().describe("The message to search for"),
@@ -137,23 +120,15 @@ async function fetchFinancialRatios(ticker: string): Promise<{
   financialData: FinancialData;
 }> {
   try {
-    const quote = await yahooFinance.quote(ticker);
-    const peRatio = quote.trailingPE || null;
-    const marketCap = quote.marketCap || null;
-    const forwardPE = quote.forwardPE || null;
-    const dividendYield = quote.trailingAnnualDividendYield || null;
+    const [quote, statistics] = await Promise.all([
+      yahooFinance.quote(ticker),
+      yahooFinance.quoteSummary(ticker, { modules: ['financialData', 'defaultKeyStatistics', 'incomeStatementHistory'] })
+    ]);
 
-    const statistics = await yahooFinance.quoteSummary(ticker, { modules: ['financialData', 'defaultKeyStatistics', 'incomeStatementHistory'] });
     const financialData = statistics?.financialData as FinancialData;
-
-    const quickRatio = financialData.quickRatio || null;
-    const currentRatio = financialData.currentRatio || null;
-    const debtToEquity = financialData.debtToEquity || null;
-    const roe = financialData.returnOnEquity || null;
 
     const today = new Date();
     const threeYearsAgo = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
-
     const historicalData = await yahooFinance.historical(ticker, { period1: threeYearsAgo.toISOString().split('T')[0], period2: today.toISOString().split('T')[0], interval: '1mo' });
 
     if (historicalData.length < 36) {
@@ -170,17 +145,17 @@ async function fetchFinancialRatios(ticker: string): Promise<{
     const threeYearCAGR = ((finalRevenue / initialRevenue) ** (1 / 3) - 1) * 100;
 
     return {
-      peRatio,
-      quickRatio,
-      currentRatio,
-      debtToEquity,
-      roe,
+      peRatio: quote.trailingPE || null,
+      quickRatio: financialData.quickRatio || null,
+      currentRatio: financialData.currentRatio || null,
+      debtToEquity: financialData.debtToEquity || null,
+      roe: financialData.returnOnEquity || null,
       threeYearCAGR,
       threeYearSalesGrowth: threeYearCAGR,
       threeYearRevenueGrowth: threeYearCAGR,
-      marketCap,
-      forwardPE,
-      dividendYield,
+      marketCap: quote.marketCap || null,
+      forwardPE: quote.forwardPE || null,
+      dividendYield: quote.trailingAnnualDividendYield || null,
       financialData,
     };
   } catch (error) {
@@ -284,15 +259,17 @@ async function initializeQueries({ message }: z.infer<typeof InitializationInput
       Competitor Ticker: <ticker>
     `;
 
-    const request: GenerateContentRequest = {
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const request = {
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
     };
 
     console.log('Sending request to generative model');
-    const result: GenerateContentResult = await generativeModel.generateContent(request);
+    const result = await model.generateContent(request);
     console.log('LLM result received');
 
-    const responseText = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+    const responseText = result.response.text();
     console.log('LLM response text:', responseText);
 
     if (responseText) {
@@ -373,15 +350,15 @@ async function initializeQueries({ message }: z.infer<typeof InitializationInput
         Latest News: ${news}
       `;
 
-      const overviewRequest: GenerateContentRequest = {
+      const overviewRequest = {
         contents: [{ role: 'user', parts: [{ text: overviewPrompt }] }],
       };
 
       console.log('Sending request to generative model for financial overview');
-      const overviewResult: GenerateContentResult = await generativeModel.generateContent(overviewRequest);
+      const overviewResult = await model.generateContent(overviewRequest);
       console.log('LLM result received for financial overview');
 
-      const overviewText = overviewResult.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      const overviewText = overviewResult.response.text();
       console.log('LLM financial overview text:', overviewText);
 
       if (overviewText) {
@@ -448,5 +425,3 @@ const initializationTool = new DynamicStructuredTool({
 });
 
 export { initializationTool, initializeQueries };
-
-

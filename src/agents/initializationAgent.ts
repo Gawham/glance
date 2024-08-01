@@ -3,7 +3,14 @@ import { Pinecone } from "@pinecone-database/pinecone";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { PineconeStore } from "@langchain/pinecone";
 import { z } from "zod";
-import { HarmBlockThreshold, HarmCategory, VertexAI, GenerateContentRequest, GenerateContentResult } from '@google-cloud/vertexai';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const apiKey = process.env.API_KEY;
+if (!apiKey) {
+  throw new Error("API_KEY environment variable is not defined");
+}
+
+const genAI = new GoogleGenerativeAI(apiKey);
 
 const embeddings = new OpenAIEmbeddings({
   openAIApiKey: process.env.OPENAI_API_KEY,
@@ -18,31 +25,6 @@ const pineconeIndex = pinecone.index('glancejs').namespace('default_namespace');
 const InitializationInputSchema = z.object({
   message: z.string().describe("The message to search for"),
   fileId: z.string().describe("The file ID for the namespace"),
-});
-
-
-const project = process.env.GOOGLE_PROJECT;
-const location = 'asia-south1';
-const textModel = 'gemini-1.5-pro';
-
-const authOptions = {
-  credentials: {
-    client_email: process.env.GCP_SERVICE_ACCOUNT_EMAIL,
-    private_key: process.env.GCP_PRIVATE_KEY,
-  }
-}
-const vertexAI = new VertexAI({
-  project: project,
-  location: location,
-  googleAuthOptions: authOptions,
-});
-
-
-
-const generativeModel = vertexAI.getGenerativeModel({
-  model: textModel,
-  safetySettings: [{ category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE }],
-  generationConfig: { maxOutputTokens: 1024, temperature: 0 },
 });
 
 const tickersList = `
@@ -181,15 +163,14 @@ async function initializeQueries({ message, fileId }: z.infer<typeof Initializat
         6. Three Question Websearch Queries to financially address the user's query. Do not make this about the ticker symbol. Formulate them using critical keywords to gather insightful information from the internet. These should be questions that help answer the user's query. Do not mention the firm's name, or country here. Mention financial aspects: QW1 - <query> - QW1, QW2 - <query> - QW2, QW3 - <query> - QW3
       `;
 
-      const request: GenerateContentRequest = {
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      };
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const request = { contents: [{ role: 'user', parts: [{ text: prompt }] }] };
 
       console.log('Sending request to generative model');
-      const result: GenerateContentResult = await generativeModel.generateContent(request);
+      const result = await model.generateContent(request);
       console.log('LLM result received');
 
-      const responseText = result.response?.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+      const responseText = result.response.text();
       console.log('LLM response text:', responseText);
 
       if (responseText) {
