@@ -32,30 +32,6 @@ async function getFundamentalData({ ticker }: { ticker: string }): Promise<strin
     const debtToEquity = financialData.debtToEquity || null;
     const roe = financialData.returnOnEquity || null;
 
-    const today = new Date();
-    const threeYearsAgo = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
-
-    const historicalData = await yahooFinance.historical(ticker, {
-      period1: threeYearsAgo.toISOString().split('T')[0],
-      period2: today.toISOString().split('T')[0],
-      interval: '1mo'
-    });
-
-    if (historicalData.length < 36) {
-      throw new Error('Insufficient historical data to calculate 3-year CAGR.');
-    }
-
-    const initialRevenue = historicalData[0]?.adjClose;
-    const finalRevenue = historicalData[historicalData.length - 1]?.adjClose;
-
-    if (initialRevenue === undefined || finalRevenue === undefined) {
-      throw new Error('Unable to determine initial or final revenue for 3-year CAGR calculation.');
-    }
-
-    const threeYearCAGR = ((finalRevenue / initialRevenue) ** (1 / 3) - 1) * 100;
-    const threeYearSalesGrowth = threeYearCAGR; // Assuming sales growth is proportional to stock price growth for this example
-    const threeYearRevenueGrowth = threeYearCAGR; // Assuming revenue growth is proportional to stock price growth for this example
-
     const fundamentalsTimeSeries = await yahooFinance.fundamentalsTimeSeries(ticker, {
       period1: '2020-01-01',
       module: 'all' // Use 'all' to fetch comprehensive data
@@ -83,9 +59,6 @@ async function getFundamentalData({ ticker }: { ticker: string }): Promise<strin
       currentRatio,
       debtToEquity,
       roe,
-      threeYearCAGR,
-      threeYearSalesGrowth,
-      threeYearRevenueGrowth,
       marketCap,
       forwardPE,
       dividendYield,
@@ -117,3 +90,4 @@ const fundamentalDataRetrievalTool = new DynamicStructuredTool({
 });
 
 export { fundamentalDataRetrievalTool };
+

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import yahooFinance from 'yahoo-finance2';
+import { financialRatiosTool, yearlySalesTool } from '../tools/data';
 import { DynamicStructuredTool } from "@langchain/core/tools";
 import { googleSearchTool } from '../tools/googleSearchTool';
 
@@ -105,98 +105,6 @@ AVGO - Broadcom Inc.
 INTC - Intel Corporation
 `;
 
-async function fetchFinancialRatios(ticker: string): Promise<{
-  peRatio: number | null;
-  quickRatio: number | null;
-  currentRatio: number | null;
-  debtToEquity: number | null;
-  roe: number | null;
-  threeYearCAGR: number | null;
-  threeYearSalesGrowth: number | null;
-  threeYearRevenueGrowth: number | null;
-  marketCap: number | null;
-  forwardPE: number | null;
-  dividendYield: number | null;
-  financialData: FinancialData;
-}> {
-  try {
-    const [quote, statistics] = await Promise.all([
-      yahooFinance.quote(ticker),
-      yahooFinance.quoteSummary(ticker, { modules: ['financialData', 'defaultKeyStatistics', 'incomeStatementHistory'] })
-    ]);
-
-    const financialData = statistics?.financialData as FinancialData;
-
-    const today = new Date();
-    const threeYearsAgo = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
-    const historicalData = await yahooFinance.historical(ticker, { period1: threeYearsAgo.toISOString().split('T')[0], period2: today.toISOString().split('T')[0], interval: '1mo' });
-
-    if (historicalData.length < 36) {
-      throw new Error('Insufficient historical data to calculate 3-year CAGR.');
-    }
-
-    const initialRevenue = historicalData[0]?.adjClose;
-    const finalRevenue = historicalData[historicalData.length - 1]?.adjClose;
-
-    if (initialRevenue === undefined || finalRevenue === undefined) {
-      throw new Error('Unable to determine initial or final revenue for 3-year CAGR calculation.');
-    }
-
-    const threeYearCAGR = ((finalRevenue / initialRevenue) ** (1 / 3) - 1) * 100;
-
-    return {
-      peRatio: quote.trailingPE || null,
-      quickRatio: financialData.quickRatio || null,
-      currentRatio: financialData.currentRatio || null,
-      debtToEquity: financialData.debtToEquity || null,
-      roe: financialData.returnOnEquity || null,
-      threeYearCAGR,
-      threeYearSalesGrowth: threeYearCAGR,
-      threeYearRevenueGrowth: threeYearCAGR,
-      marketCap: quote.marketCap || null,
-      forwardPE: quote.forwardPE || null,
-      dividendYield: quote.trailingAnnualDividendYield || null,
-      financialData,
-    };
-  } catch (error) {
-    console.error('Error fetching financial ratios from Yahoo Finance:', error);
-    return {
-      peRatio: null,
-      quickRatio: null,
-      currentRatio: null,
-      debtToEquity: null,
-      roe: null,
-      threeYearCAGR: null,
-      threeYearSalesGrowth: null,
-      threeYearRevenueGrowth: null,
-      marketCap: null,
-      forwardPE: null,
-      dividendYield: null,
-      financialData: {} as FinancialData,
-    };
-  }
-}
-
-async function fetchYearlySales(ticker: string): Promise<YearlySalesData[]> {
-  try {
-    const financials = await yahooFinance.quoteSummary(ticker, { modules: ['incomeStatementHistory'] });
-    const yearlySales = financials?.incomeStatementHistory?.incomeStatementHistory;
-
-    if (!yearlySales || yearlySales.length === 0) {
-      console.warn(`No yearly sales data found for ticker: ${ticker}`);
-      return [];
-    }
-
-    return yearlySales.map((year: any) => ({
-      date: year.endDate,
-      sales: year.totalRevenue,
-    }));
-  } catch (error) {
-    console.error('Error fetching yearly sales data from Yahoo Finance:', error);
-    return [];
-  }
-}
-
 async function initializeQueries({ message }: z.infer<typeof InitializationInputSchema>): Promise<{
   companyName: string;
   ticker: string;
@@ -289,30 +197,24 @@ async function initializeQueries({ message }: z.infer<typeof InitializationInput
       console.log(`Competitor Name: ${competitorName}`);
 
       if (ticker !== 'Unknown') {
-        const ratios = await fetchFinancialRatios(ticker);
+        const ratios = await financialRatiosTool.func({ ticker });
         peRatio = ratios.peRatio;
         quickRatio = ratios.quickRatio;
         currentRatio = ratios.currentRatio;
         debtToEquity = ratios.debtToEquity;
         roe = ratios.roe;
-        threeYearCAGR = ratios.threeYearCAGR;
-        threeYearSalesGrowth = ratios.threeYearSalesGrowth;
-        threeYearRevenueGrowth = ratios.threeYearRevenueGrowth;
         marketCap = ratios.marketCap;
         forwardPE = ratios.forwardPE;
         dividendYield = ratios.dividendYield;
-        financialData = ratios.financialData;
+        financialData = ratios;
 
-        companyYearlySales = await fetchYearlySales(ticker);
+        companyYearlySales = await yearlySalesTool.func({ ticker });
 
         console.log(`PE Ratio: ${peRatio}`);
         console.log(`Quick Ratio: ${quickRatio}`);
         console.log(`Current Ratio: ${currentRatio}`);
         console.log(`Debt to Equity: ${debtToEquity}`);
         console.log(`ROE: ${roe}`);
-        console.log(`3-Year CAGR: ${threeYearCAGR}`);
-        console.log(`3-Year Sales Growth: ${threeYearSalesGrowth}`);
-        console.log(`3-Year Revenue Growth: ${threeYearRevenueGrowth}`);
         console.log(`Market Cap: ${marketCap}`);
         console.log(`Forward PE: ${forwardPE}`);
         console.log(`Dividend Yield: ${dividendYield}`);
@@ -321,7 +223,7 @@ async function initializeQueries({ message }: z.infer<typeof InitializationInput
       }
 
       if (competitorTicker !== 'Unknown') {
-        competitorYearlySales = await fetchYearlySales(competitorTicker);
+        competitorYearlySales = await yearlySalesTool.func({ ticker: competitorTicker });
         console.log('Fetched Competitor Yearly Sales Data:', competitorYearlySales);
       }
 
@@ -332,6 +234,7 @@ async function initializeQueries({ message }: z.infer<typeof InitializationInput
         console.log('Latest news:', news);
       }
 
+      // Generate financial overview (companyQuery)
       const overviewPrompt = `
         Generate a 30-word detailed financial overview for the following company based on the provided financial data and latest news:
 
@@ -342,7 +245,6 @@ async function initializeQueries({ message }: z.infer<typeof InitializationInput
         Current Ratio: ${currentRatio}
         Debt to Equity: ${debtToEquity}
         ROE: ${roe}
-        3-Year CAGR: ${threeYearCAGR}
         Market Cap: ${marketCap}
         Forward PE: ${forwardPE}
         Dividend Yield: ${dividendYield}
@@ -371,28 +273,6 @@ async function initializeQueries({ message }: z.infer<typeof InitializationInput
     console.error('Error during initializeQueries:', error);
   }
 
-  console.log('Final extracted values:');
-  console.log(`Company Name: ${companyName}`);
-  console.log(`Ticker: ${ticker}`);
-  console.log(`Competitor Name: ${competitorName}`);
-  console.log(`Competitor Ticker: ${competitorTicker}`);
-  console.log(`Company Query: ${companyQuery}`);
-  console.log(`PE Ratio: ${peRatio}`);
-  console.log(`Quick Ratio: ${quickRatio}`);
-  console.log(`Current Ratio: ${currentRatio}`);
-  console.log(`Debt to Equity: ${debtToEquity}`);
-  console.log(`ROE: ${roe}`);
-  console.log(`3-Year CAGR: ${threeYearCAGR}`);
-  console.log(`3-Year Sales Growth: ${threeYearSalesGrowth}`);
-  console.log(`3-Year Revenue Growth: ${threeYearRevenueGrowth}`);
-  console.log(`Market Cap: ${marketCap}`);
-  console.log(`Forward PE: ${forwardPE}`);
-  console.log(`Dividend Yield: ${dividendYield}`);
-  console.log('Fetched Financial Data:', financialData);
-  console.log('Fetched Yearly Sales Data:', companyYearlySales);
-  console.log('Fetched Competitor Yearly Sales Data:', competitorYearlySales);
-  console.log('Fetched Latest News:', news);
-
   return { 
     companyName, 
     ticker, 
@@ -419,7 +299,7 @@ async function initializeQueries({ message }: z.infer<typeof InitializationInput
 
 const initializationTool = new DynamicStructuredTool({
   name: "initialization-tool",
-  description: "Extracts company name, ticker symbol, and competitor information. Fetches financial ratios, ROE, 3-year CAGR, and fundamental data using LLM and Yahoo Finance. Generates a detailed financial overview.",
+  description: "Extracts company name, ticker symbol, and competitor information. Fetches financial ratios, ROE, and fundamental data using Yahoo Finance. Generates a detailed financial overview.",
   schema: InitializationInputSchema,
   func: initializeQueries,
 });
